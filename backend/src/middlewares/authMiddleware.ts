@@ -9,18 +9,17 @@ interface JwtPayload {
 }
 
 // Extend Express Request type to include user
-declare global {
-  namespace Express {
-    interface Request {
-      user?: IUser;
-    }
+// Declare the augmentation for Express Request
+declare module "express" {
+  interface Request {
+    user?: IUser;
   }
 }
 
 // Protect routes - Authentication check
 export const protect = async (
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
@@ -77,7 +76,7 @@ export const protect = async (
 
 // Authorize roles
 export const authorize = (...roles: string[]) => {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, _res: Response, next: NextFunction) => {
     if (!req.user) {
       return next(new AppError("User not authenticated", 401));
     }

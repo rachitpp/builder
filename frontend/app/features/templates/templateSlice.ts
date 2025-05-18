@@ -1,19 +1,27 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { templateAPI } from '@/app/lib/apiClient';
-import type { RootState } from '@/app/lib/store';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { templateAPI } from "@/app/lib/apiClient";
+import { mockTemplates } from "@/app/lib/mockData";
+import type { RootState } from "@/app/lib/store";
 
 // Define types
 export interface Template {
   _id: string;
   name: string;
   description: string;
-  previewImage: string;
-  category: 'simple' | 'professional' | 'creative' | 'modern' | 'academic';
+  thumbnailUrl?: string;
+  previewImage?: string;
+  category: string;
   isPremium: boolean;
-  cssTemplate: string;
-  htmlStructure: string;
-  createdAt: string;
-  updatedAt: string;
+  sections?: string[];
+  layout?: {
+    type: string;
+    colors: string[];
+    fonts: string[];
+  };
+  cssTemplate?: string;
+  htmlStructure?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface TemplateState {
@@ -41,48 +49,108 @@ const initialState: TemplateState = {
 
 // Async thunks
 export const getTemplates = createAsyncThunk(
-  'templates/getAll',
+  "templates/getAll",
   async (
-    { category, isPremium, page = 1, limit = 10 }: 
-    { category?: string; isPremium?: boolean; page?: number; limit?: number },
+    {
+      category,
+      isPremium,
+      page = 1,
+      limit = 10,
+    }: {
+      category?: string;
+      isPremium?: boolean;
+      page?: number;
+      limit?: number;
+    },
     { rejectWithValue }
   ) => {
     try {
-      const response = await templateAPI.getTemplates(category, isPremium, page, limit);
+      const response = await templateAPI.getTemplates(
+        category,
+        isPremium,
+        page,
+        limit
+      );
       return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch templates');
+      // If API fails, return mock data instead of rejecting
+      console.warn(
+        "Using mock template data due to API failure:",
+        error.message
+      );
+      return {
+        success: true,
+        count: mockTemplates.length,
+        total: mockTemplates.length,
+        pagination: {
+          page: 1,
+          limit: mockTemplates.length,
+          pages: 1,
+        },
+        data: mockTemplates,
+      };
     }
   }
 );
 
 export const getTemplateById = createAsyncThunk(
-  'templates/getById',
+  "templates/getById",
   async (id: string, { rejectWithValue }) => {
     try {
       const response = await templateAPI.getTemplate(id);
       return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch template');
+      // If API fails, find the template in mock data
+      console.warn(
+        "Using mock template data due to API failure:",
+        error.message
+      );
+      const mockTemplate = mockTemplates.find(
+        (template) => template._id === id
+      );
+
+      if (mockTemplate) {
+        return {
+          success: true,
+          data: mockTemplate,
+        };
+      }
+
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch template"
+      );
     }
   }
 );
 
 export const getTemplateCategories = createAsyncThunk(
-  'templates/getCategories',
+  "templates/getCategories",
   async (_, { rejectWithValue }) => {
     try {
       const response = await templateAPI.getTemplateCategories();
       return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch template categories');
+      // If API fails, extract categories from mock data
+      console.warn(
+        "Using mock template categories due to API failure:",
+        error.message
+      );
+      const categories = Array.from(
+        new Set(mockTemplates.map((template) => template.category))
+      );
+
+      return {
+        success: true,
+        count: categories.length,
+        data: categories,
+      };
     }
   }
 );
 
 // Create the slice
 const templateSlice = createSlice({
-  name: 'templates',
+  name: "templates",
   initialState,
   reducers: {
     clearTemplate: (state) => {
@@ -145,11 +213,16 @@ export const { clearTemplate, resetTemplateState } = templateSlice.actions;
 
 export const selectTemplates = (state: RootState) => state.templates.templates;
 export const selectTemplate = (state: RootState) => state.templates.template;
-export const selectCategories = (state: RootState) => state.templates.categories;
-export const selectTemplateLoading = (state: RootState) => state.templates.loading;
+export const selectCategories = (state: RootState) =>
+  state.templates.categories;
+export const selectTemplateLoading = (state: RootState) =>
+  state.templates.loading;
 export const selectTemplateError = (state: RootState) => state.templates.error;
-export const selectTotalTemplates = (state: RootState) => state.templates.totalTemplates;
-export const selectCurrentPage = (state: RootState) => state.templates.currentPage;
-export const selectTotalPages = (state: RootState) => state.templates.totalPages;
+export const selectTotalTemplates = (state: RootState) =>
+  state.templates.totalTemplates;
+export const selectCurrentPage = (state: RootState) =>
+  state.templates.currentPage;
+export const selectTotalPages = (state: RootState) =>
+  state.templates.totalPages;
 
 export default templateSlice.reducer;

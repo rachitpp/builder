@@ -1,6 +1,6 @@
-import mongoose from 'mongoose';
-import type { Document, Model } from 'mongoose';
-import type { IUser } from './userModel';
+import mongoose from "mongoose";
+import type { Document, Model } from "mongoose";
+import type { IUser } from "./userModel";
 
 // Section interfaces
 export interface IEducation {
@@ -25,12 +25,17 @@ export interface IExperience {
 
 export interface ISkill {
   name: string;
-  level?: 'beginner' | 'intermediate' | 'advanced' | 'expert';
+  level?: "beginner" | "intermediate" | "advanced" | "expert";
 }
 
 export interface ILanguage {
   name: string;
-  proficiency: 'elementary' | 'limited_working' | 'professional_working' | 'full_professional' | 'native';
+  proficiency:
+    | "elementary"
+    | "limited_working"
+    | "professional_working"
+    | "full_professional"
+    | "native";
 }
 
 export interface IProject {
@@ -61,9 +66,9 @@ export interface IReference {
 
 // Main Resume interface
 export interface IResume extends Document {
-  user: IUser['_id'];
+  user: IUser["_id"];
   title: string;
-  templateId: mongoose.Schema.Types.ObjectId;
+  templateId: mongoose.Schema.Types.ObjectId | string;
   personalInfo: {
     firstName: string;
     lastName: string;
@@ -101,33 +106,43 @@ const resumeSchema = new mongoose.Schema(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
       required: true,
     },
     title: {
       type: String,
-      required: [true, 'Resume title is required'],
+      required: [true, "Resume title is required"],
       trim: true,
     },
     templateId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Template',
+      ref: "Template",
       required: true,
+      validate: {
+        validator: function (v: any) {
+          // Accept either ObjectId or a string starting with 'template'
+          return (
+            mongoose.Types.ObjectId.isValid(v) ||
+            (typeof v === "string" && v.startsWith("template"))
+          );
+        },
+        message: (props: any) => `${props.value} is not a valid template ID!`,
+      },
     },
     personalInfo: {
       firstName: {
         type: String,
-        required: [true, 'First name is required'],
+        required: [true, "First name is required"],
         trim: true,
       },
       lastName: {
         type: String,
-        required: [true, 'Last name is required'],
+        required: [true, "Last name is required"],
         trim: true,
       },
       email: {
         type: String,
-        required: [true, 'Email is required'],
+        required: [true, "Email is required"],
         trim: true,
         lowercase: true,
       },
@@ -203,7 +218,7 @@ const resumeSchema = new mongoose.Schema(
         },
         level: {
           type: String,
-          enum: ['beginner', 'intermediate', 'advanced', 'expert'],
+          enum: ["beginner", "intermediate", "advanced", "expert"],
         },
       },
     ],
@@ -215,7 +230,13 @@ const resumeSchema = new mongoose.Schema(
         },
         proficiency: {
           type: String,
-          enum: ['elementary', 'limited_working', 'professional_working', 'full_professional', 'native'],
+          enum: [
+            "elementary",
+            "limited_working",
+            "professional_working",
+            "full_professional",
+            "native",
+          ],
           required: true,
         },
       },
@@ -300,6 +321,6 @@ const resumeSchema = new mongoose.Schema(
 resumeSchema.index({ user: 1 });
 resumeSchema.index({ isPublic: 1 });
 
-const Resume: Model<IResume> = mongoose.model<IResume>('Resume', resumeSchema);
+const Resume: Model<IResume> = mongoose.model<IResume>("Resume", resumeSchema);
 
 export default Resume;

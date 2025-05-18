@@ -71,12 +71,14 @@ apiClient.interceptors.response.use(
 
       // Try to refresh token
       try {
+        console.log("Attempting to refresh token");
         const response = await axios.post(
           `${BASE_URL}/auth/refresh-token`,
           {},
           { withCredentials: true }
         );
 
+        console.log("Refresh token response:", response.data);
         const { token } = response.data;
 
         if (token) {
@@ -175,7 +177,14 @@ export const userAPI = {
 
 // Resume API
 export const resumeAPI = {
-  createResume: (resumeData: any) => apiClient.post("/resumes", resumeData),
+  createResume: (resumeData: any) => {
+    // Log the data being sent to help debugging
+    console.log("Creating resume with data:", resumeData);
+    return apiClient.post("/resumes", resumeData).catch((error) => {
+      console.error("Resume API error:", error.response?.data || error.message);
+      throw error;
+    });
+  },
 
   getResumes: (page = 1, limit = 10) =>
     apiClient.get(`/resumes?page=${page}&limit=${limit}`),
@@ -193,6 +202,12 @@ export const resumeAPI = {
   getPublicResume: (id: string) => apiClient.get(`/resumes/public/${id}`),
 
   cloneResume: (id: string) => apiClient.post(`/resumes/${id}/clone`),
+
+  downloadPdf: (id: string) =>
+    apiClient.get(`/resumes/${id}/pdf`, {
+      responseType: "blob",
+      headers: { Accept: "text/html" },
+    }),
 };
 
 // Template API

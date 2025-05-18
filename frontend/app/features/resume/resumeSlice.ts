@@ -1,6 +1,6 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { resumeAPI } from '@/app/lib/apiClient';
-import type { RootState } from '@/app/lib/store';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { resumeAPI } from "@/app/lib/apiClient";
+import type { RootState } from "@/app/lib/store";
 
 // Define types for resume
 interface Education {
@@ -25,12 +25,17 @@ interface Experience {
 
 interface Skill {
   name: string;
-  level?: 'beginner' | 'intermediate' | 'advanced' | 'expert';
+  level?: "beginner" | "intermediate" | "advanced" | "expert";
 }
 
 interface Language {
   name: string;
-  proficiency: 'elementary' | 'limited_working' | 'professional_working' | 'full_professional' | 'native';
+  proficiency:
+    | "elementary"
+    | "limited_working"
+    | "professional_working"
+    | "full_professional"
+    | "native";
 }
 
 interface Project {
@@ -128,23 +133,23 @@ const initialState: ResumeState = {
 
 // Create empty resume template
 export const createEmptyResume = (): Resume => ({
-  title: 'Untitled Resume',
-  templateId: '',
+  title: "Untitled Resume",
+  templateId: "",
   personalInfo: {
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    address: '',
-    city: '',
-    state: '',
-    zipCode: '',
-    country: '',
-    linkedIn: '',
-    website: '',
-    github: '',
-    summary: '',
-    jobTitle: '',
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    address: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    country: "",
+    linkedIn: "",
+    website: "",
+    github: "",
+    summary: "",
+    jobTitle: "",
   },
   education: [],
   experience: [],
@@ -159,104 +164,184 @@ export const createEmptyResume = (): Resume => ({
 
 // Async thunks
 export const createResume = createAsyncThunk(
-  'resume/create',
+  "resume/create",
   async (resumeData: Resume, { rejectWithValue }) => {
     try {
+      // Check if templateId is a mock ID (starts with "template")
+      if (
+        resumeData.templateId &&
+        resumeData.templateId.startsWith("template")
+      ) {
+        console.log("Using mock template ID:", resumeData.templateId);
+        // You could clone the resumeData and modify it here if needed
+      }
+
       const response = await resumeAPI.createResume(resumeData);
       return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to create resume');
+      console.error("Resume creation error:", error);
+      const errorMessage =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        "Failed to create resume";
+      return rejectWithValue(errorMessage);
     }
   }
 );
 
 export const getResumes = createAsyncThunk(
-  'resume/getAll',
-  async ({ page = 1, limit = 10 }: { page?: number; limit?: number }, { rejectWithValue }) => {
+  "resume/getAll",
+  async (
+    { page = 1, limit = 10 }: { page?: number; limit?: number },
+    { rejectWithValue }
+  ) => {
     try {
       const response = await resumeAPI.getResumes(page, limit);
       return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch resumes');
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch resumes"
+      );
     }
   }
 );
 
 export const getResumeById = createAsyncThunk(
-  'resume/getById',
+  "resume/getById",
   async (id: string, { rejectWithValue }) => {
     try {
       const response = await resumeAPI.getResume(id);
       return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch resume');
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch resume"
+      );
     }
   }
 );
 
 export const updateResume = createAsyncThunk(
-  'resume/update',
-  async ({ id, resumeData }: { id: string; resumeData: Resume }, { rejectWithValue }) => {
+  "resume/update",
+  async (
+    { id, resumeData }: { id: string; resumeData: Resume },
+    { rejectWithValue }
+  ) => {
     try {
       const response = await resumeAPI.updateResume(id, resumeData);
       return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to update resume');
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to update resume"
+      );
     }
   }
 );
 
 export const deleteResume = createAsyncThunk(
-  'resume/delete',
+  "resume/delete",
   async (id: string, { rejectWithValue }) => {
     try {
       const response = await resumeAPI.deleteResume(id);
       return { id, ...response.data };
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to delete resume');
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to delete resume"
+      );
     }
   }
 );
 
 export const toggleResumeVisibility = createAsyncThunk(
-  'resume/toggleVisibility',
-  async ({ id, isPublic }: { id: string; isPublic: boolean }, { rejectWithValue }) => {
+  "resume/toggleVisibility",
+  async (
+    { id, isPublic }: { id: string; isPublic: boolean },
+    { rejectWithValue }
+  ) => {
     try {
       const response = await resumeAPI.toggleVisibility(id, isPublic);
       return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to toggle resume visibility');
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to toggle resume visibility"
+      );
     }
   }
 );
 
 export const getPublicResume = createAsyncThunk(
-  'resume/getPublic',
+  "resume/getPublic",
   async (id: string, { rejectWithValue }) => {
     try {
       const response = await resumeAPI.getPublicResume(id);
       return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch public resume');
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch public resume"
+      );
     }
   }
 );
 
 export const cloneResume = createAsyncThunk(
-  'resume/clone',
+  "resume/clone",
   async (id: string, { rejectWithValue }) => {
     try {
       const response = await resumeAPI.cloneResume(id);
       return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to clone resume');
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to clone resume"
+      );
+    }
+  }
+);
+
+export const downloadResumePdf = createAsyncThunk(
+  "resume/downloadPdf",
+  async (id: string, { rejectWithValue, getState }) => {
+    try {
+      // Get token from state to ensure proper authorization
+      const state = getState() as RootState;
+      const token = state.auth.token;
+
+      if (!token) {
+        throw new Error("Authentication required. Please log in.");
+      }
+
+      const response = await resumeAPI.downloadPdf(id);
+
+      // Create a blob URL for the HTML content
+      const blob = new Blob([response.data], { type: "text/html" });
+      const url = window.URL.createObjectURL(blob);
+
+      // Open the HTML in a new window/tab for the user to print
+      window.open(url, "_blank");
+
+      // Clean up the URL after a short delay
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+      }, 100);
+
+      return url; // Return the URL for potential use
+    } catch (error: any) {
+      console.error("Resume HTML generation error:", error);
+
+      // Handle authentication error specifically
+      if (error.response?.status === 401) {
+        return rejectWithValue("Authentication required. Please log in again.");
+      }
+
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to generate resume"
+      );
     }
   }
 );
 
 // Create the slice
 const resumeSlice = createSlice({
-  name: 'resume',
+  name: "resume",
   initialState,
   reducers: {
     setCurrentResume: (state, action) => {
@@ -338,7 +423,9 @@ const resumeSlice = createSlice({
         state.currentResume = action.payload.data;
 
         // Update resume in the list
-        const index = state.resumes.findIndex((resume) => resume._id === action.payload.data._id);
+        const index = state.resumes.findIndex(
+          (resume) => resume._id === action.payload.data._id
+        );
         if (index !== -1) {
           state.resumes[index] = action.payload.data;
         }
@@ -355,9 +442,14 @@ const resumeSlice = createSlice({
       })
       .addCase(deleteResume.fulfilled, (state, action) => {
         state.loading = false;
-        state.resumes = state.resumes.filter((resume) => resume._id !== action.payload.id);
+        state.resumes = state.resumes.filter(
+          (resume) => resume._id !== action.payload.id
+        );
         state.totalResumes -= 1;
-        if (state.currentResume && state.currentResume._id === action.payload.id) {
+        if (
+          state.currentResume &&
+          state.currentResume._id === action.payload.id
+        ) {
           state.currentResume = null;
         }
       })
@@ -372,14 +464,19 @@ const resumeSlice = createSlice({
       })
       .addCase(toggleResumeVisibility.fulfilled, (state, action) => {
         state.loading = false;
-        
+
         // Update current resume if it's the one being toggled
-        if (state.currentResume && state.currentResume._id === action.payload.data._id) {
+        if (
+          state.currentResume &&
+          state.currentResume._id === action.payload.data._id
+        ) {
           state.currentResume = action.payload.data;
         }
-        
+
         // Update in the list
-        const index = state.resumes.findIndex((resume) => resume._id === action.payload.data._id);
+        const index = state.resumes.findIndex(
+          (resume) => resume._id === action.payload.data._id
+        );
         if (index !== -1) {
           state.resumes[index] = action.payload.data;
         }
@@ -419,12 +516,19 @@ const resumeSlice = createSlice({
 });
 
 // Export actions and selectors
-export const { setCurrentResume, clearCurrentResume, resetResumeState, setPdfUrl, clearPdfUrl } =
-  resumeSlice.actions;
+export const {
+  setCurrentResume,
+  clearCurrentResume,
+  resetResumeState,
+  setPdfUrl,
+  clearPdfUrl,
+} = resumeSlice.actions;
 
-export const selectCurrentResume = (state: RootState) => state.resume.currentResume;
+export const selectCurrentResume = (state: RootState) =>
+  state.resume.currentResume;
 export const selectResumes = (state: RootState) => state.resume.resumes;
-export const selectTotalResumes = (state: RootState) => state.resume.totalResumes;
+export const selectTotalResumes = (state: RootState) =>
+  state.resume.totalResumes;
 export const selectResumeLoading = (state: RootState) => state.resume.loading;
 export const selectResumeError = (state: RootState) => state.resume.error;
 export const selectResumeSuccess = (state: RootState) => state.resume.success;

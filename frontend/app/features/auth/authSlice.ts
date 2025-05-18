@@ -60,9 +60,12 @@ export const loginUser = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
+      console.log("Login attempt with:", credentials.email);
       const response = await authAPI.login(credentials);
+      console.log("Login successful, response:", response.data);
       return response.data;
     } catch (error: any) {
+      console.error("Login error:", error.response?.data || error.message);
       return rejectWithValue(error.response?.data?.message || "Login failed");
     }
   }
