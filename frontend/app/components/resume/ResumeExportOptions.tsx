@@ -4,7 +4,11 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface ResumeExportOptionsProps {
-  onExport: (format: string, colorScheme?: string) => Promise<void>;
+  onExport: (
+    format: string,
+    template?: string,
+    colorScheme?: string
+  ) => Promise<void>;
   resumeId: string;
 }
 
@@ -14,6 +18,7 @@ const ResumeExportOptions: React.FC<ResumeExportOptionsProps> = ({
 }) => {
   const [selectedFormat, setSelectedFormat] = useState<string>("pdf");
   const [colorScheme, setColorScheme] = useState<string>("default");
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("modern");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showOptions, setShowOptions] = useState<boolean>(false);
 
@@ -53,10 +58,15 @@ const ResumeExportOptions: React.FC<ResumeExportOptionsProps> = ({
     { id: "gray", name: "Gray", color: "#4B5563" },
   ];
 
+  const templateOptions = [
+    { id: "modern", name: "Modern", icon: "🌟" },
+    { id: "minimal", name: "Minimal", icon: "✨" },
+  ];
+
   const handleExport = async () => {
     try {
       setIsLoading(true);
-      await onExport(selectedFormat, colorScheme);
+      await onExport(selectedFormat, selectedTemplate, colorScheme);
     } catch (error) {
       console.error("Export failed:", error);
     } finally {
@@ -197,6 +207,72 @@ const ResumeExportOptions: React.FC<ResumeExportOptionsProps> = ({
                       </motion.div>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* Template Selection (Only for PDF) */}
+              {selectedFormat === "pdf" && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">
+                    Template Style
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {templateOptions.map((template) => (
+                      <motion.div
+                        key={template.id}
+                        onClick={() => setSelectedTemplate(template.id)}
+                        className={`p-3 rounded-lg border ${
+                          selectedTemplate === template.id
+                            ? "border-primary-500 bg-primary-50"
+                            : "border-gray-200 hover:border-gray-300"
+                        } cursor-pointer transition-all duration-200`}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <div className="flex items-center">
+                          <span className="text-xl mr-3">{template.icon}</span>
+                          <div>
+                            <p className="font-medium text-gray-800">
+                              {template.name}
+                            </p>
+                          </div>
+                          {selectedTemplate === template.id && (
+                            <motion.div
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              className="ml-auto"
+                            >
+                              <svg
+                                className="h-5 w-5 text-primary-600"
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                            </motion.div>
+                          )}
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Add note about PDF quality */}
+              {selectedFormat === "pdf" && (
+                <div className="mt-2 mb-4 bg-blue-50 border border-blue-100 rounded-md p-3">
+                  <p className="text-xs text-blue-700">
+                    <span className="font-semibold">
+                      Enhanced PDF Generation:
+                    </span>{" "}
+                    Your PDFs are now created with high-quality rendering,
+                    custom fonts, and professional formatting.
+                  </p>
                 </div>
               )}
 

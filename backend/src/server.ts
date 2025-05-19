@@ -4,13 +4,39 @@ import type { Express } from "express";
 import { logger } from "./utils/logger";
 import { connectDatabase } from "./config/database";
 import { configureApp } from "./config/app";
+import { connectRedis } from "./config/redis";
 
 // Load environment variables
 dotenv.config();
 
 // Validate required environment variables
 const requiredEnvVars = ["JWT_SECRET", "JWT_REFRESH_SECRET", "MONGODB_URI"];
+
+// Optional OAuth env vars - will only enable OAuth if both client ID and secret are provided
+const oauthEnvVars = {
+  google: ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"],
+  linkedin: ["LINKEDIN_CLIENT_ID", "LINKEDIN_CLIENT_SECRET"],
+};
+
 const missingEnvVars = requiredEnvVars.filter((envVar) => !process.env[envVar]);
+
+// Log which OAuth providers are configured
+Object.entries(oauthEnvVars).forEach(([provider, vars]) => {
+  const isConfigured = vars.every((envVar) => !!process.env[envVar]);
+  if (isConfigured) {
+    logger.info(
+      `${
+        provider.charAt(0).toUpperCase() + provider.slice(1)
+      } OAuth is configured`
+    );
+  } else {
+    logger.warn(
+      `${
+        provider.charAt(0).toUpperCase() + provider.slice(1)
+      } OAuth is not fully configured`
+    );
+  }
+});
 
 if (missingEnvVars.length > 0) {
   logger.error(
@@ -48,6 +74,10 @@ const startServer = async () => {
   try {
     // Connect to MongoDB
     await connectDatabase();
+
+    // Connect to Redis
+    await connectRedis();
+    logger.info("Redis connected for caching and session management");
 
     // Start server
     const server = app.listen(PORT, () => {

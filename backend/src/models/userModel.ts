@@ -2,6 +2,12 @@ import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import type { Document, Model } from "mongoose";
 
+interface SocialProfile {
+  id: string;
+  email?: string;
+  name?: string;
+}
+
 export interface IUser extends Document {
   email: string;
   password: string;
@@ -14,6 +20,8 @@ export interface IUser extends Document {
   verificationToken?: string;
   resetPasswordToken?: string;
   resetPasswordExpire?: Date;
+  google?: SocialProfile;
+  linkedin?: SocialProfile;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(enteredPassword: string): Promise<boolean>;
@@ -70,6 +78,17 @@ const userSchema = new mongoose.Schema(
     verificationToken: String,
     resetPasswordToken: String,
     resetPasswordExpire: Date,
+    // Social authentication fields
+    google: {
+      id: String,
+      email: String,
+      name: String,
+    },
+    linkedin: {
+      id: String,
+      email: String,
+      name: String,
+    },
   },
   {
     timestamps: true,

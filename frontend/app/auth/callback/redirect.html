@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Redirecting to Dashboard</title>
+    <meta http-equiv="refresh" content="0; URL=/dashboard" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+        background-color: #f9fafb;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        text-align: center;
+      }
+      .container {
+        max-width: 500px;
+        padding: 2rem;
+        background-color: white;
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #111827;
+        font-weight: 700;
+        margin-bottom: 1rem;
+      }
+      p {
+        color: #6b7280;
+        margin-bottom: 1.5rem;
+      }
+      .spinner {
+        display: inline-block;
+        width: 50px;
+        height: 50px;
+        border: 3px solid rgba(59, 130, 246, 0.2);
+        border-radius: 50%;
+        border-top-color: #3b82f6;
+        animation: spin 1s ease-in-out infinite;
+        margin-bottom: 1.5rem;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .button {
+        display: inline-block;
+        background-color: #3b82f6;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.25rem;
+        text-decoration: none;
+        font-weight: 500;
+        transition: background-color 0.15s;
+      }
+      .button:hover {
+        background-color: #2563eb;
+      }
+    </style>
+    <script>
+      // JavaScript redirect fallback
+      window.onload = function () {
+        // Try to redirect using window.location
+        try {
+          window.location.href = "/dashboard";
+        } catch (e) {
+          console.error("Failed to redirect:", e);
+        }
+
+        // Add click handler for manual redirect
+        document
+          .getElementById("manual-redirect")
+          .addEventListener("click", function () {
+            window.location.href = "/dashboard";
+          });
+      };
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <div class="spinner"></div>
+      <h1>Authentication Successful!</h1>
+      <p>Redirecting you to the dashboard...</p>
+      <p>
+        If you are not redirected automatically,
+        <a href="/dashboard" id="manual-redirect" class="button">click here</a>
+      </p>
+    </div>
+  </body>
+</html>

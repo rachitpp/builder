@@ -27,14 +27,48 @@ const onTokenRefreshed = (token: string) => {
   refreshSubscribers = [];
 };
 
-// Add a request interceptor to add authorization token
+// Add token validation helper
+const isValidToken = (token: string | null): boolean => {
+  if (!token) return false;
+  try {
+    // Check if token is a valid JWT format (you can add more validation if needed)
+    const parts = token.split(".");
+    return parts.length === 3;
+  } catch (e) {
+    return false;
+  }
+};
+
+// Add cookie helper
+const getCookie = (name: string) => {
+  if (typeof document === "undefined") return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) {
+    const val = parts.pop()?.split(";").shift();
+    return val ? decodeURIComponent(val) : null;
+  }
+  return null;
+};
+
+// Request interceptor to add token to headers
 apiClient.interceptors.request.use(
   (config) => {
-    // Get token from localStorage in client-side
-    if (typeof window !== "undefined") {
-      const token = localStorage.getItem("token");
-      if (token) {
+    if (typeof document !== "undefined") {
+      // Try to get token from both localStorage and cookies
+      const lsToken = localStorage.getItem("token");
+      const cookieToken = getCookie("token");
+      const token = cookieToken || lsToken;
+
+      console.log("ApiClient - Request interceptor token sources:", {
+        localStorage: lsToken ? "exists" : "not found",
+        cookie: cookieToken ? "exists" : "not found",
+        using: token ? "token found" : "no token",
+      });
+
+      if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`;
+        console.log("ApiClient - Added token to request headers");
       }
     }
     return config;
@@ -44,12 +78,22 @@ apiClient.interceptors.request.use(
 
 // Add a response interceptor for handling common errors
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log("ApiClient - Response success:", response.config.url);
+    return response;
+  },
   async (error) => {
+    console.error("ApiClient - Response error:", {
+      url: error.config?.url,
+      status: error.response?.status,
+      data: error.response?.data,
+    });
+
     const originalRequest = error.config;
 
     // Handle unauthorized errors (401)
     if (error.response?.status === 401 && !originalRequest._retry) {
+      console.log("ApiClient - Attempting to handle 401 error");
       if (isRefreshing) {
         // Wait for token refresh if already in progress
         try {
@@ -144,9 +188,69 @@ export const authAPI = {
   login: (credentials: { email: string; password: string }) =>
     apiClient.post("/auth/login", credentials),
 
+  socialLogin: (provider: string, code: string, redirectUri: string) => {
+    console.log("AuthAPI - Making social login request:", {
+      provider,
+      hasCode: !!code,
+      redirectUri,
+    });
+    return apiClient
+      .post(`/auth/${provider}/callback`, { code, redirectUri })
+      .then((response) => {
+        console.log("AuthAPI - Social login response:", {
+          status: response.status,
+          hasData: !!response.data,
+          hasToken: !!response.data?.token,
+        });
+        return response;
+      })
+      .catch((error) => {
+        console.error("AuthAPI - Social login error:", {
+          status: error.response?.status,
+          message: error.response?.data?.message || error.message,
+          data: error.response?.data,
+        });
+        throw error;
+      });
+  },
+
+  socialAuthUrl: (provider: string, redirectUri: string) => {
+    console.log("AuthAPI - Getting social auth URL:", {
+      provider,
+      redirectUri,
+    });
+    return apiClient
+      .get(
+        `/auth/${provider}/url?redirectUri=${encodeURIComponent(redirectUri)}`
+      )
+      .then((response) => {
+        console.log("AuthAPI - Social auth URL response:", {
+          status: response.status,
+          hasAuthUrl: !!response.data?.authorizationUrl,
+        });
+        return response;
+      })
+      .catch((error) => {
+        console.error("AuthAPI - Social auth URL error:", {
+          status: error.response?.status,
+          message: error.response?.data?.message || error.message,
+        });
+        throw error;
+      });
+  },
+
+  linkSocialAccount: (provider: string, code: string, redirectUri: string) =>
+    apiClient.post(`/auth/${provider}/link`, { code, redirectUri }),
+
+  unlinkSocialAccount: (provider: string) =>
+    apiClient.post(`/auth/${provider}/unlink`),
+
   logout: () => apiClient.get("/auth/logout"),
 
-  getCurrentUser: () => apiClient.get("/auth/me"),
+  getCurrentUser: () => {
+    console.log("AuthAPI - Requesting current user");
+    return apiClient.get("/auth/me");
+  },
 
   verifyEmail: (token: string) => apiClient.get(`/auth/verify-email/${token}`),
 
@@ -203,10 +307,10 @@ export const resumeAPI = {
 
   cloneResume: (id: string) => apiClient.post(`/resumes/${id}/clone`),
 
-  downloadPdf: (id: string) =>
-    apiClient.get(`/resumes/${id}/pdf`, {
+  downloadPdf: (id: string, template: string = "modern") =>
+    apiClient.get(`/resumes/${id}/pdf?template=${template}`, {
       responseType: "blob",
-      headers: { Accept: "text/html" },
+      headers: { Accept: "application/pdf" },
     }),
 };
 

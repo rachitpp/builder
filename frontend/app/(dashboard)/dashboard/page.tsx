@@ -13,472 +13,593 @@ import {
   getTemplates,
   selectTemplates,
 } from "@/app/features/templates/templateSlice";
-import ResumeCard from "@/app/components/dashboard/ResumeCard";
-import FeaturedTemplates from "@/app/components/dashboard/FeaturedTemplates";
 import { motion } from "framer-motion";
+import { Skeleton } from "@/app/components/ui/skeleton";
+import { Button } from "@/app/components/ui/button";
+import { Badge } from "@/app/components/ui/badge";
 
 export default function Dashboard() {
   const dispatch = useAppDispatch();
   const user = useAppSelector(selectUser);
   const resumes = useAppSelector(selectResumes);
-  const loading = useAppSelector(selectResumeLoading);
   const templates = useAppSelector(selectTemplates);
+  const loading = useAppSelector(selectResumeLoading);
 
   useEffect(() => {
-    // Fetch user resumes
-    dispatch(getResumes({ page: 1, limit: 4 }));
-
-    // Fetch templates
-    dispatch(getTemplates({ page: 1, limit: 5 }));
+    dispatch(getResumes({ page: 1, limit: 10 }));
+    dispatch(getTemplates({ page: 1, limit: 3 }));
   }, [dispatch]);
 
   // Animation variants
-  const containerVariant = {
+  const container = {
     hidden: { opacity: 0 },
-    visible: {
+    show: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.03,
+        staggerChildren: 0.1,
+        delayChildren: 0.3,
       },
     },
   };
 
-  const itemVariant = {
-    hidden: { opacity: 0, y: 8 },
-    visible: {
+  const item = {
+    hidden: { opacity: 0, y: 20 },
+    show: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.2 },
+      transition: {
+        type: "spring",
+        stiffness: 260,
+        damping: 20,
+      },
     },
   };
 
-  // Summary stats with improved data
-  const stats = [
-    {
-      title: "Total Resumes",
-      value: resumes.length,
-      icon: (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-4 w-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-          />
-        </svg>
-      ),
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
-    },
-    {
-      title: "Downloads",
-      value: 5,
-      icon: (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-4 w-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-          />
-        </svg>
-      ),
-      color: "text-green-600",
-      bgColor: "bg-green-50",
-    },
-    {
-      title: "Views",
-      value: 12,
-      icon: (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-4 w-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-          />
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-          />
-        </svg>
-      ),
-      color: "text-indigo-600",
-      bgColor: "bg-indigo-50",
-    },
-    {
-      title: "Job Matches",
-      value: 8,
-      icon: (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-4 w-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-          />
-        </svg>
-      ),
-      color: "text-amber-600",
-      bgColor: "bg-amber-50",
-    },
-  ];
+  // Get current time for greeting
+  const getCurrentGreeting = () => {
+    const hours = new Date().getHours();
+    if (hours < 12) return "Good morning";
+    if (hours < 18) return "Good afternoon";
+    return "Good evening";
+  };
 
-  // Recent activity
-  const recentActivity = [
+  // Mock activities data
+  const activities = [
     {
-      id: 1,
-      action: "Created resume",
-      target: "Software Engineer Resume",
-      date: "2 days ago",
-      icon: "📄",
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-5 w-5"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="16" y1="13" x2="8" y2="13" />
+          <line x1="16" y1="17" x2="8" y2="17" />
+          <polyline points="10 9 9 9 8 9" />
+        </svg>
+      ),
+      title: "Resume Created",
+      description: "You created UX Designer Portfolio",
+      time: "1 day ago",
+      color: "bg-blue-100 text-blue-600",
     },
     {
-      id: 2,
-      action: "Updated resume",
-      target: "Marketing Specialist CV",
-      date: "1 week ago",
-      icon: "✏️",
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-5 w-5"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+          <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+        </svg>
+      ),
+      title: "Resume Updated",
+      description: "You updated Software Engineer Resume",
+      time: "3 days ago",
+      color: "bg-indigo-100 text-indigo-600",
     },
     {
-      id: 3,
-      action: "Downloaded resume",
-      target: "Project Manager Resume",
-      date: "2 weeks ago",
-      icon: "⬇️",
-    },
-  ];
-
-  // Job recommendations
-  const jobRecommendations = [
-    {
-      id: 1,
-      title: "Senior Software Engineer",
-      company: "TechCorp Inc.",
-      location: "Remote",
-      match: 92,
-    },
-    {
-      id: 2,
-      title: "Product Manager",
-      company: "InnovateTech",
-      location: "San Francisco, CA",
-      match: 87,
-    },
-    {
-      id: 3,
-      title: "UX/UI Designer",
-      company: "Creative Solutions",
-      location: "New York, NY",
-      match: 78,
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-5 w-5"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+          <polyline points="7 10 12 15 17 10" />
+          <line x1="12" y1="15" x2="12" y2="3" />
+        </svg>
+      ),
+      title: "Resume Downloaded",
+      description: "Downloaded Project Manager Resume",
+      time: "2 weeks ago",
+      color: "bg-green-100 text-green-600",
     },
   ];
 
   return (
-    <motion.div
-      initial="hidden"
-      animate="visible"
-      variants={containerVariant}
-      className="space-y-3"
-    >
-      {/* Welcome Banner & Quick Stats */}
-      <div className="flex flex-col md:flex-row gap-3">
-        {/* Welcome Banner */}
+    <div className="space-y-6">
+      {/* Welcome Hero Section */}
+      <section>
         <motion.div
-          variants={itemVariant}
-          className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-lg shadow-sm md:flex-1"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="relative bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl overflow-hidden"
         >
-          <div className="relative py-3 px-4">
-            <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between">
-              <div className="text-white">
-                <h2 className="text-base font-semibold">
-                  Welcome, {user?.firstName || "User"}!
-                </h2>
-                <p className="mt-0.5 text-primary-100 text-xs max-w-xl">
-                  Create and manage your professional resumes
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2 mt-2 md:mt-0">
-                <Link
-                  href="/dashboard/resumes/new"
-                  className="text-xs font-medium px-2.5 py-1 rounded bg-white text-primary-700 hover:bg-primary-50 inline-flex items-center shadow-sm"
-                >
+          <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
+          <div className="absolute top-0 right-0 -mt-16 -mr-16 w-64 h-64 bg-white opacity-10 rounded-full"></div>
+          <div className="absolute bottom-0 left-0 -mb-16 -ml-16 w-64 h-64 bg-white opacity-10 rounded-full"></div>
+
+          <div className="relative z-10 p-8 sm:p-10 text-white">
+            <h1 className="text-3xl sm:text-4xl font-bold mb-2">
+              {getCurrentGreeting()}, {user?.firstName || "User"}!
+            </h1>
+            <p className="text-indigo-100 max-w-lg text-lg mb-8">
+              Build stunning resumes that stand out from the crowd. Your
+              professional journey starts here.
+            </p>
+
+            <div className="flex flex-wrap gap-4">
+              <Button
+                className="bg-white text-indigo-600 hover:bg-indigo-50 border-0 rounded-xl py-5 px-6 text-base font-medium shadow-xl shadow-indigo-900/20"
+                size="lg"
+                asChild
+              >
+                <Link href="/dashboard/resumes/new">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="h-3 w-3 mr-1"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
+                    className="h-5 w-5 mr-2"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                   >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                      clipRule="evenodd"
-                    />
+                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="12" y1="18" x2="12" y2="12" />
+                    <line x1="9" y1="15" x2="15" y2="15" />
                   </svg>
-                  New Resume
+                  Create New Resume
                 </Link>
-              </div>
+              </Button>
+
+              <Button
+                variant="outline"
+                className="bg-transparent border-2 border-white/30 text-white hover:bg-white/10 rounded-xl py-5 px-6 text-base font-medium"
+                size="lg"
+                asChild
+              >
+                <Link href="/dashboard/templates">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 mr-2"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                    <line x1="3" y1="9" x2="21" y2="9" />
+                    <line x1="9" y1="21" x2="9" y2="9" />
+                  </svg>
+                  Explore Templates
+                </Link>
+              </Button>
             </div>
           </div>
         </motion.div>
+      </section>
 
-        {/* Quick Stats - Horizontal desktop / vertical mobile */}
+      {/* Stats Section */}
+      <motion.section
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6"
+      >
         <motion.div
-          variants={itemVariant}
-          className="bg-white rounded-lg shadow-sm p-3 border border-gray-100 md:w-56"
+          variants={item}
+          whileHover={{ y: -5, transition: { duration: 0.2 } }}
+          className="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300"
         >
-          <div className="flex items-center mb-3">
-            <div className="h-7 w-7 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-xs mr-2">
-              {user?.firstName?.charAt(0) || "U"}
-            </div>
+          <div className="flex justify-between">
             <div>
-              <p className="text-xs font-medium text-gray-800">
-                {user?.firstName} {user?.lastName}
-              </p>
-              <div className="flex items-center text-xs text-primary-600">
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500 mr-1"></span>
-                <span>Active</span>
-              </div>
+              <p className="text-gray-500 text-sm font-medium">Total Resumes</p>
+              <h3 className="text-gray-900 text-3xl font-bold mt-2">
+                {loading ? (
+                  <Skeleton className="h-9 w-16 bg-gray-200" />
+                ) : (
+                  resumes.length || 0
+                )}
+              </h3>
             </div>
-          </div>
-          <div className="space-y-1.5">
-            <div className="flex justify-between text-xs">
-              <span className="text-gray-500">Profile completeness</span>
-              <span className="text-primary-600 font-medium">70%</span>
-            </div>
-            <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-              <div
-                className="bg-primary-500 h-full rounded-full"
-                style={{ width: "70%" }}
-              ></div>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Stats Row */}
-      <motion.div variants={itemVariant} className="grid grid-cols-4 gap-2">
-        {stats.map((stat, index) => (
-          <motion.div
-            key={index}
-            variants={itemVariant}
-            className="col-span-2 sm:col-span-1"
-          >
-            <div
-              className={`${
-                stat.bgColor
-              } rounded-lg px-3 py-2 border border-${stat.color.replace(
-                "text-",
-                ""
-              )}-100 shadow-sm flex items-center`}
-            >
-              <div className={`${stat.color} mr-2 p-1 bg-white rounded-md`}>
-                {stat.icon}
-              </div>
-              <div>
-                <div className="text-sm font-semibold text-gray-800">
-                  {stat.value}
-                </div>
-                <div className="text-xs text-gray-500">{stat.title}</div>
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </motion.div>
-
-      {/* Main Content */}
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-3">
-        {/* Left Column - Recent Resumes (3/4 width on large screens) */}
-        <motion.div
-          variants={itemVariant}
-          className="xl:col-span-3 bg-white rounded-lg shadow-sm p-3 border border-gray-100"
-        >
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="text-sm font-semibold text-gray-800">
-              Recent Resumes
-            </h3>
-            <Link
-              href="/dashboard/resumes"
-              className="text-xs text-primary-600 hover:text-primary-700 flex items-center"
-            >
-              View All
+            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-indigo-50 to-indigo-100 flex items-center justify-center text-indigo-600">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-3 w-3 ml-1"
-                viewBox="0 0 20 20"
-                fill="currentColor"
+                className="h-6 w-6"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
-                <path
-                  fillRule="evenodd"
-                  d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                  clipRule="evenodd"
-                />
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+                <polyline points="10 9 9 9 8 9" />
               </svg>
-            </Link>
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          variants={item}
+          whileHover={{ y: -5, transition: { duration: 0.2 } }}
+          className="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300"
+        >
+          <div className="flex justify-between">
+            <div>
+              <p className="text-gray-500 text-sm font-medium">Downloads</p>
+              <h3 className="text-gray-900 text-3xl font-bold mt-2">5</h3>
+            </div>
+            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center text-blue-600">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          variants={item}
+          whileHover={{ y: -5, transition: { duration: 0.2 } }}
+          className="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300"
+        >
+          <div className="flex justify-between">
+            <div>
+              <p className="text-gray-500 text-sm font-medium">Views</p>
+              <h3 className="text-gray-900 text-3xl font-bold mt-2">12</h3>
+            </div>
+            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center text-green-600">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          variants={item}
+          whileHover={{ y: -5, transition: { duration: 0.2 } }}
+          className="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300"
+        >
+          <div className="flex justify-between">
+            <div>
+              <p className="text-gray-500 text-sm font-medium">Job Matches</p>
+              <h3 className="text-gray-900 text-3xl font-bold mt-2">8</h3>
+            </div>
+            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-amber-50 to-amber-100 flex items-center justify-center text-amber-600">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16" />
+              </svg>
+            </div>
+          </div>
+        </motion.div>
+      </motion.section>
+
+      {/* Main Content Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Recent Resumes */}
+        <motion.section
+          variants={container}
+          initial="hidden"
+          animate="show"
+          className="lg:col-span-2"
+        >
+          <div className="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm h-full">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-gray-900 text-xl font-bold">
+                Recent Resumes
+              </h2>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 rounded-xl"
+                asChild
+              >
+                <Link href="/dashboard/resumes">View All</Link>
+              </Button>
+            </div>
+
+            {loading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <Skeleton
+                    key={i}
+                    className="h-24 w-full rounded-xl bg-gray-100"
+                  />
+                ))}
+              </div>
+            ) : resumes.length > 0 ? (
+              <div className="space-y-4">
+                {resumes.slice(0, 3).map((resume) => (
+                  <motion.div
+                    key={resume._id}
+                    variants={item}
+                    whileHover={{ x: 5, transition: { duration: 0.2 } }}
+                    className="flex gap-4 p-4 rounded-xl hover:bg-gray-50 border border-gray-100 transition-colors duration-200"
+                  >
+                    <div className="h-16 w-12 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden">
+                      {false ? (
+                        <img
+                          src=""
+                          alt={resume.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-6 w-6"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                            <line x1="16" y1="13" x2="8" y2="13" />
+                            <line x1="16" y1="17" x2="8" y2="17" />
+                            <polyline points="10 9 9 9 8 9" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-grow">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-gray-900 font-medium text-base">
+                          {resume.title}
+                        </h3>
+                        <Badge
+                          variant="secondary"
+                          className="rounded-full text-xs capitalize"
+                        >
+                          Draft
+                        </Badge>
+                      </div>
+                      <p className="text-gray-500 text-sm mt-1">
+                        {"Custom Template"}
+                      </p>
+                      <div className="flex justify-between items-center mt-2">
+                        <p className="text-gray-400 text-xs">
+                          Last modified: {new Date().toLocaleDateString()}
+                        </p>
+                        <Link
+                          href={`/builder/${resume._id}`}
+                          className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                        >
+                          Edit
+                        </Link>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="h-20 w-20 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-400 mb-4">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-10 w-10"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="12" y1="18" x2="12" y2="12" />
+                    <line x1="9" y1="15" x2="15" y2="15" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  No resumes yet
+                </h3>
+                <p className="text-gray-500 mb-6 max-w-sm">
+                  Create your first resume to keep track of your professional
+                  journey
+                </p>
+                <Button
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl"
+                  asChild
+                >
+                  <Link href="/dashboard/resumes/new">Create New Resume</Link>
+                </Button>
+              </div>
+            )}
+          </div>
+        </motion.section>
+
+        {/* Activity */}
+        <motion.section variants={container} initial="hidden" animate="show">
+          <div className="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm h-full">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-gray-900 text-xl font-bold">
+                Recent Activity
+              </h2>
+            </div>
+
+            {loading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <Skeleton
+                    key={i}
+                    className="h-16 w-full rounded-lg bg-gray-100"
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-5">
+                {activities.map((activity, index) => (
+                  <motion.div
+                    key={index}
+                    variants={item}
+                    className="flex gap-4 rounded-xl"
+                  >
+                    <div className={`p-2 rounded-lg ${activity.color} h-fit`}>
+                      {activity.icon}
+                    </div>
+                    <div>
+                      <h3 className="text-gray-900 text-sm font-medium">
+                        {activity.title}
+                      </h3>
+                      <p className="text-gray-600 text-xs mt-1">
+                        {activity.description}
+                      </p>
+                      <p className="text-gray-400 text-xs mt-2">
+                        {activity.time}
+                      </p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </div>
+        </motion.section>
+      </div>
+
+      {/* Templates Preview */}
+      <motion.section variants={item} initial="hidden" animate="show">
+        <div className="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-gray-900 text-xl font-bold">Templates</h2>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 rounded-xl"
+              asChild
+            >
+              <Link href="/dashboard/templates">Browse All</Link>
+            </Button>
           </div>
 
           {loading ? (
-            <div className="flex justify-center items-center h-20">
-              <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-primary-600"></div>
-            </div>
-          ) : resumes.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {resumes.slice(0, 4).map((resume) => (
-                <ResumeCard key={resume._id} resume={resume} />
-              ))}
-            </div>
+            <Skeleton className="h-56 w-full rounded-xl bg-gray-100" />
           ) : (
-            <div className="bg-gray-50 rounded-lg p-3 text-center">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6 mx-auto text-gray-400 mb-1"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-              </svg>
-              <p className="text-xs text-gray-500 mb-2">
-                Create your first resume to get started
-              </p>
-              <Link
-                href="/dashboard/resumes/new"
-                className="inline-flex items-center text-xs bg-primary-600 text-white py-1 px-2 rounded hover:bg-primary-700"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-3 w-3 mr-1"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                Create Resume
-              </Link>
+            <div className="relative h-56 overflow-hidden rounded-xl">
+              <div className="absolute inset-0 grid grid-cols-3 gap-4">
+                {templates.slice(0, 3).map((template, index) => (
+                  <div
+                    key={template._id || index}
+                    className="relative overflow-hidden rounded-lg bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 transition-transform duration-300 hover:scale-[1.03] shadow-sm hover:shadow-md"
+                    style={{
+                      backgroundImage: template.thumbnailUrl
+                        ? `url(${template.thumbnailUrl})`
+                        : undefined,
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                    }}
+                  >
+                    {!template.thumbnailUrl && (
+                      <div className="absolute inset-0 flex items-center justify-center text-gray-400">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-8 w-8"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <rect
+                            x="3"
+                            y="3"
+                            width="18"
+                            height="18"
+                            rx="2"
+                            ry="2"
+                          />
+                          <circle cx="8.5" cy="8.5" r="1.5" />
+                          <polyline points="21 15 16 10 5 21" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-indigo-900 via-indigo-900/30 to-transparent flex items-end p-4">
+                <p className="text-white text-sm mb-2">
+                  Choose from{" "}
+                  <span className="text-indigo-200 font-semibold">
+                    {templates.length}
+                  </span>{" "}
+                  professional templates
+                </p>
+              </div>
             </div>
           )}
-        </motion.div>
-
-        {/* Right Column - Activity (1/4 width on large screens) */}
-        <motion.div
-          variants={itemVariant}
-          className="bg-white rounded-lg shadow-sm p-3 border border-gray-100"
-        >
-          <h3 className="text-sm font-semibold text-gray-800 mb-2">
-            Recent Activity
-          </h3>
-          <div className="divide-y divide-gray-100">
-            {recentActivity.map((activity) => (
-              <div key={activity.id} className="py-2 flex items-start">
-                <div className="flex-shrink-0 mr-2 text-sm">
-                  {activity.icon}
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs text-gray-800">
-                    <span className="font-medium">{activity.action}</span>
-                    <span className="text-primary-600 ml-1">
-                      {activity.target}
-                    </span>
-                  </p>
-                  <p className="text-xs text-gray-500">{activity.date}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Featured Templates Section */}
-      <motion.div variants={itemVariant}>
-        <FeaturedTemplates templates={templates} />
-      </motion.div>
-
-      {/* Job Recommendations */}
-      <motion.div
-        variants={itemVariant}
-        className="bg-white rounded-lg shadow-sm p-3 border border-gray-100"
-      >
-        <div className="flex justify-between items-center mb-3">
-          <h3 className="text-sm font-semibold text-gray-800">
-            Recommended Jobs
-          </h3>
-          <a
-            href="#"
-            className="text-xs text-primary-600 hover:text-primary-700 flex items-center"
-          >
-            View All
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-3 w-3 ml-1"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fillRule="evenodd"
-                d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </a>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-          {jobRecommendations.map((job) => (
-            <div
-              key={job.id}
-              className="rounded-lg border border-gray-100 hover:border-primary-100 transition-colors p-2 hover:bg-gray-50"
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <h4 className="font-medium text-xs text-gray-800">
-                    {job.title}
-                  </h4>
-                  <p className="text-xs text-gray-500">
-                    {job.company} • {job.location}
-                  </p>
-                </div>
-                <span className="bg-green-50 text-green-700 text-xs px-1.5 py-0.5 rounded-full">
-                  {job.match}%
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </motion.div>
-    </motion.div>
+      </motion.section>
+    </div>
   );
 }

@@ -3,6 +3,8 @@ import mongoose from "mongoose";
 import Resume from "../models/resumeModel";
 import { AppError } from "../middlewares/errorMiddleware";
 import type { IUser } from "../models/userModel";
+import { CacheService } from "../services/cacheService";
+import { PDFService } from "../services/pdfService";
 
 // @desc    Create a new resume
 // @route   POST /api/resumes
@@ -57,6 +59,10 @@ export const createResume = async (
     });
 
     const resume = await Resume.create(req.body);
+
+    // Invalidate user's resumes cache
+    const userId = (req.user as IUser)._id.toString();
+    await CacheService.delByPattern(`resumes:user:${userId}*`);
 
     res.status(201).json({
       success: true,
@@ -197,6 +203,13 @@ export const updateResume = async (
       runValidators: true,
     });
 
+    // Invalidate caches for this resume and the user's resume list
+    await Promise.all([
+      CacheService.delByPattern(`resume:user:${userId}*`),
+      CacheService.delByPattern(`resumes:user:${userId}*`),
+      CacheService.delByPattern(`resume:public:${resumeId}*`),
+    ]);
+
     res.status(200).json({
       success: true,
       data: resume,
@@ -237,6 +250,13 @@ export const deleteResume = async (
 
     // Delete resume
     await Resume.findByIdAndDelete(resumeId);
+
+    // Invalidate caches for this resume and the user's resume list
+    await Promise.all([
+      CacheService.delByPattern(`resume:user:${userId}*`),
+      CacheService.delByPattern(`resumes:user:${userId}*`),
+      CacheService.delByPattern(`resume:public:${resumeId}*`),
+    ]);
 
     res.status(200).json({
       success: true,
@@ -293,6 +313,12 @@ export const toggleResumeVisibility = async (
         runValidators: true,
       }
     );
+
+    // Invalidate caches related to this resume
+    await Promise.all([
+      CacheService.delByPattern(`resume:user:${userId}*`),
+      CacheService.delByPattern(`resume:public:${resumeId}*`),
+    ]);
 
     res.status(200).json({
       success: true,
@@ -404,6 +430,7 @@ export const generateResumePDF = async (
   try {
     const resumeId = req.params.id;
     const userId = (req.user as IUser)._id;
+    const templateName = (req.query.template as string) || "modern";
 
     if (!mongoose.Types.ObjectId.isValid(resumeId)) {
       throw new AppError("Invalid resume ID", 400);
@@ -422,220 +449,239 @@ export const generateResumePDF = async (
       throw new AppError("Not authorized to access this resume", 403);
     }
 
-    // Generate resume content based on the data
-    const { title, personalInfo, experience, education, skills } = resume;
-    const fullName = `${personalInfo.firstName} ${personalInfo.lastName}`;
+    // Generate PDF from resume data
+    try {
+      // Generate PDF using our advanced PDF service
+      const pdfBuffer = await PDFService.generatePDF(resume, templateName);
 
-    // Generate HTML for education section
-    const educationHTML = education.length
-      ? `
-        <div class="section">
-          <h2>Education</h2>
-          ${education
-            .map(
-              (edu) => `
-            <div class="item">
-              <div class="item-title">${edu.degree} in ${edu.fieldOfStudy}</div>
-              <div class="item-subtitle">${edu.institution}</div>
-              <div class="item-date">${new Date(
-                edu.startDate
-              ).getFullYear()} - ${
-                edu.endDate ? new Date(edu.endDate).getFullYear() : "Present"
-              }</div>
-              ${
-                edu.description
-                  ? `<div class="item-description">${edu.description}</div>`
-                  : ""
-              }
-            </div>
-          `
-            )
-            .join("")}
-        </div>
-      `
-      : "";
+      // Set appropriate headers
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `inline; filename="${resume.title.replace(/\s+/g, "_")}_resume.pdf"`
+      );
 
-    // Generate HTML for experience section
-    const experienceHTML = experience.length
-      ? `
-        <div class="section">
-          <h2>Experience</h2>
-          ${experience
-            .map(
-              (exp) => `
-            <div class="item">
-              <div class="item-title">${exp.position}</div>
-              <div class="item-subtitle">${exp.company}${
-                exp.location ? `, ${exp.location}` : ""
-              }</div>
-              <div class="item-date">${new Date(
-                exp.startDate
-              ).getFullYear()} - ${
-                exp.endDate ? new Date(exp.endDate).getFullYear() : "Present"
-              }</div>
-              <div class="item-description">${exp.description}</div>
-            </div>
-          `
-            )
-            .join("")}
-        </div>
-      `
-      : "";
+      // Send the PDF
+      res.status(200).send(pdfBuffer);
+    } catch (error: any) {
+      // If PDF generation fails, fallback to HTML generation
+      // Generate HTML content for the resume
+      const { title, personalInfo, experience, education, skills } = resume;
+      const fullName = `${personalInfo.firstName} ${personalInfo.lastName}`;
 
-    // Generate HTML for skills section
-    const skillsHTML = skills.length
-      ? `
-        <div class="section">
-          <h2>Skills</h2>
-          <div class="skills-container">
-            ${skills
+      // Generate HTML for education section
+      const educationHTML = education.length
+        ? `
+          <div class="section">
+            <h2>Education</h2>
+            ${education
               .map(
-                (skill) =>
-                  `<div class="skill">${skill.name}${
-                    skill.level ? ` (${skill.level})` : ""
-                  }</div>`
+                (edu) => `
+              <div class="item">
+                <div class="item-title">${edu.degree} in ${
+                  edu.fieldOfStudy
+                }</div>
+                <div class="item-subtitle">${edu.institution}</div>
+                <div class="item-date">${new Date(
+                  edu.startDate
+                ).getFullYear()} - ${
+                  edu.endDate ? new Date(edu.endDate).getFullYear() : "Present"
+                }</div>
+                ${
+                  edu.description
+                    ? `<div class="item-description">${edu.description}</div>`
+                    : ""
+                }
+              </div>
+            `
               )
               .join("")}
           </div>
-        </div>
-      `
-      : "";
+        `
+        : "";
 
-    // Simple HTML content for the resume
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <title>${title}</title>
-        <style>
-          body { 
-            font-family: Arial, sans-serif; 
-            margin: 0; 
-            padding: 0;
-            color: #333;
-            line-height: 1.5;
-          }
-          .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 40px;
-          }
-          .header {
-            text-align: center;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 20px;
-          }
-          .name {
-            font-size: 28px;
-            font-weight: bold;
-            margin-bottom: 5px;
-          }
-          .contact {
-            font-size: 14px;
-            color: #555;
-            margin-bottom: 10px;
-          }
-          .job-title {
-            font-size: 18px;
-            color: #777;
-            margin-bottom: 5px;
-          }
-          .summary {
-            font-size: 14px;
-            margin-bottom: 20px;
-          }
-          .section {
-            margin-bottom: 25px;
-          }
-          h2 {
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 5px;
-            margin-bottom: 15px;
-            font-size: 18px;
-          }
-          .item {
-            margin-bottom: 15px;
-          }
-          .item-title {
-            font-weight: bold;
-            font-size: 16px;
-          }
-          .item-subtitle {
-            font-size: 14px;
-          }
-          .item-date {
-            font-size: 14px;
-            color: #777;
-            margin-bottom: 5px;
-          }
-          .item-description {
-            font-size: 14px;
-          }
-          .skills-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-          }
-          .skill {
-            background: #f5f5f5;
-            padding: 5px 10px;
-            border-radius: 3px;
-            font-size: 14px;
-          }
-          @media print {
-            body {
-              -webkit-print-color-adjust: exact;
-              print-color-adjust: exact;
+      // Generate HTML for experience section
+      const experienceHTML = experience.length
+        ? `
+          <div class="section">
+            <h2>Experience</h2>
+            ${experience
+              .map(
+                (exp) => `
+              <div class="item">
+                <div class="item-title">${exp.position}</div>
+                <div class="item-subtitle">${exp.company}${
+                  exp.location ? `, ${exp.location}` : ""
+                }</div>
+                <div class="item-date">${new Date(
+                  exp.startDate
+                ).getFullYear()} - ${
+                  exp.endDate ? new Date(exp.endDate).getFullYear() : "Present"
+                }</div>
+                <div class="item-description">${exp.description}</div>
+              </div>
+            `
+              )
+              .join("")}
+          </div>
+        `
+        : "";
+
+      // Generate HTML for skills section
+      const skillsHTML = skills.length
+        ? `
+          <div class="section">
+            <h2>Skills</h2>
+            <div class="skills-container">
+              ${skills
+                .map(
+                  (skill) =>
+                    `<div class="skill">${skill.name}${
+                      skill.level ? ` (${skill.level})` : ""
+                    }</div>`
+                )
+                .join("")}
+            </div>
+          </div>
+        `
+        : "";
+
+      // Simple HTML content for the resume
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>${title}</title>
+          <style>
+            body { 
+              font-family: Arial, sans-serif; 
+              margin: 0; 
+              padding: 0;
+              color: #333;
+              line-height: 1.5;
             }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <div class="name">${fullName}</div>
-            ${
-              personalInfo.jobTitle
-                ? `<div class="job-title">${personalInfo.jobTitle}</div>`
-                : ""
+            .container {
+              max-width: 800px;
+              margin: 0 auto;
+              padding: 40px;
             }
-            <div class="contact">
-              ${personalInfo.email} ${
-      personalInfo.phone ? `| ${personalInfo.phone}` : ""
-    }
-              ${personalInfo.address ? `| ${personalInfo.address}` : ""}
+            .header {
+              text-align: center;
+              margin-bottom: 30px;
+              border-bottom: 2px solid #eee;
+              padding-bottom: 20px;
+            }
+            .name {
+              font-size: 28px;
+              font-weight: bold;
+              margin-bottom: 5px;
+            }
+            .contact {
+              font-size: 14px;
+              color: #555;
+              margin-bottom: 10px;
+            }
+            .job-title {
+              font-size: 18px;
+              color: #777;
+              margin-bottom: 5px;
+            }
+            .summary {
+              font-size: 14px;
+              margin-bottom: 20px;
+            }
+            .section {
+              margin-bottom: 25px;
+            }
+            h2 {
+              border-bottom: 1px solid #ddd;
+              padding-bottom: 5px;
+              margin-bottom: 15px;
+              font-size: 18px;
+            }
+            .item {
+              margin-bottom: 15px;
+            }
+            .item-title {
+              font-weight: bold;
+              font-size: 16px;
+            }
+            .item-subtitle {
+              font-size: 14px;
+            }
+            .item-date {
+              font-size: 14px;
+              color: #777;
+              margin-bottom: 5px;
+            }
+            .item-description {
+              font-size: 14px;
+            }
+            .skills-container {
+              display: flex;
+              flex-wrap: wrap;
+              gap: 10px;
+            }
+            .skill {
+              background: #f5f5f5;
+              padding: 5px 10px;
+              border-radius: 3px;
+              font-size: 14px;
+            }
+            @media print {
+              body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <div class="name">${fullName}</div>
               ${
-                personalInfo.city && personalInfo.state
-                  ? `| ${personalInfo.city}, ${personalInfo.state}`
+                personalInfo.jobTitle
+                  ? `<div class="job-title">${personalInfo.jobTitle}</div>`
+                  : ""
+              }
+              <div class="contact">
+                ${personalInfo.email} ${
+        personalInfo.phone ? `| ${personalInfo.phone}` : ""
+      }
+                ${personalInfo.address ? `| ${personalInfo.address}` : ""}
+                ${
+                  personalInfo.city && personalInfo.state
+                    ? `| ${personalInfo.city}, ${personalInfo.state}`
+                    : ""
+                }
+              </div>
+              ${
+                personalInfo.summary
+                  ? `<div class="summary">${personalInfo.summary}</div>`
                   : ""
               }
             </div>
-            ${
-              personalInfo.summary
-                ? `<div class="summary">${personalInfo.summary}</div>`
-                : ""
-            }
+            
+            ${experienceHTML}
+            ${educationHTML}
+            ${skillsHTML}
           </div>
-          
-          ${experienceHTML}
-          ${educationHTML}
-          ${skillsHTML}
-        </div>
-      </body>
-      </html>
-    `;
+        </body>
+        </html>
+      `;
 
-    // Instead of generating a PDF, we'll return an HTML file that can be printed as PDF
-    res.setHeader("Content-Type", "text/html");
-    res.setHeader(
-      "Content-Disposition",
-      `inline; filename="${title.replace(/\s+/g, "_")}_resume.html"`
-    );
+      // Return HTML as fallback
+      res.setHeader("Content-Type", "text/html");
+      res.setHeader(
+        "Content-Disposition",
+        `inline; filename="${title.replace(/\s+/g, "_")}_resume.html"`
+      );
 
-    // Send the HTML content
-    res.status(200).send(htmlContent);
+      // Send the HTML content
+      res.status(200).send(htmlContent);
+    }
   } catch (error) {
     next(error);
   }

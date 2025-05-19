@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Redirecting to Dashboard</title>
+    <!-- Meta redirect -->
+    <meta http-equiv="refresh" content="0;url=/dashboard" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue",
+          sans-serif;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        background-color: #f9fafb;
+      }
+      .container {
+        text-align: center;
+        max-width: 500px;
+        padding: 40px;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        margin-top: 0;
+        color: #111827;
+      }
+      p {
+        color: #6b7280;
+        margin-bottom: 24px;
+      }
+      .spinner {
+        border: 4px solid rgba(0, 0, 0, 0.1);
+        border-radius: 50%;
+        border-top: 4px solid #3b82f6;
+        width: 40px;
+        height: 40px;
+        margin: 0 auto 24px;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      .button {
+        display: inline-block;
+        background-color: #3b82f6;
+        color: white;
+        text-decoration: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        font-weight: 500;
+      }
+    </style>
+    <script>
+      // JavaScript redirects
+      window.onload = function () {
+        // Try multiple redirection methods
+
+        // Method 1: Push state and replace
+        try {
+          window.history.pushState({}, "", "/dashboard");
+          window.location.replace("/dashboard");
+        } catch (e) {
+          console.error("Push state redirect failed:", e);
+        }
+
+        // Method 2: Direct href
+        setTimeout(function () {
+          try {
+            window.location.href = "/dashboard";
+          } catch (e) {
+            console.error("Location href redirect failed:", e);
+          }
+        }, 100);
+
+        // Method 3: Assign
+        setTimeout(function () {
+          try {
+            window.location.assign("/dashboard");
+          } catch (e) {
+            console.error("Location assign redirect failed:", e);
+          }
+        }, 200);
+
+        // Method 4: Direct href on document.location
+        setTimeout(function () {
+          try {
+            document.location.href = "/dashboard";
+          } catch (e) {
+            console.error("Document location redirect failed:", e);
+          }
+        }, 300);
+      };
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <div class="spinner"></div>
+      <h1>Redirecting to Dashboard</h1>
+      <p>You are being redirected to your dashboard...</p>
+      <a href="/dashboard" class="button"
+        >Click here if you are not redirected automatically</a
+      >
+    </div>
+  </body>
+</html>

@@ -2,7 +2,11 @@ import { Request, Response, NextFunction } from "express";
 import crypto from "crypto";
 import User from "../models/userModel";
 import { AppError } from "../middlewares/errorMiddleware";
-import { sendTokenResponse } from "../utils/tokenUtil";
+import {
+  sendTokenResponse,
+  generateToken,
+  generateRefreshToken,
+} from "../utils/tokenUtil";
 import {
   sendVerificationEmail,
   sendPasswordResetEmail,
@@ -392,6 +396,114 @@ export const refreshToken = async (
         throw error;
       }
     }
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Google OAuth callback
+// @route   GET /api/auth/google/callback
+// @access  Public
+export const googleCallback = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  try {
+    if (!req.user) {
+      return next(new AppError("Authentication failed", 401));
+    }
+
+    // Create tokens
+    const user = req.user as IUser;
+    const token = generateToken(user._id.toString());
+    const refreshToken = generateRefreshToken(user._id.toString());
+
+    // Parse JWT_COOKIE_EXPIRE to number (default to 1 if not set or invalid)
+    const cookieExpireDays =
+      parseInt(process.env.JWT_COOKIE_EXPIRE as string) || 1;
+    const refreshExpireDays =
+      parseInt(process.env.JWT_REFRESH_EXPIRE_DAYS as string) || 30;
+
+    // Set cookie options
+    const cookieOptions = {
+      expires: new Date(Date.now() + cookieExpireDays * 24 * 60 * 60 * 1000),
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite:
+        process.env.NODE_ENV === "production"
+          ? ("none" as const)
+          : ("lax" as const),
+      path: "/",
+    };
+
+    const refreshCookieOptions = {
+      ...cookieOptions,
+      expires: new Date(Date.now() + refreshExpireDays * 24 * 60 * 60 * 1000),
+      path: "/api/auth/refresh-token", // Restrict path for better security
+    };
+
+    // Set cookies
+    res.cookie("token", token, cookieOptions);
+    res.cookie("refreshToken", refreshToken, refreshCookieOptions);
+
+    // Redirect to the frontend dashboard
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    res.redirect(`${frontendUrl}/dashboard`);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    LinkedIn OAuth callback
+// @route   GET /api/auth/linkedin/callback
+// @access  Public
+export const linkedinCallback = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  try {
+    if (!req.user) {
+      return next(new AppError("Authentication failed", 401));
+    }
+
+    // Create tokens
+    const user = req.user as IUser;
+    const token = generateToken(user._id.toString());
+    const refreshToken = generateRefreshToken(user._id.toString());
+
+    // Parse JWT_COOKIE_EXPIRE to number (default to 1 if not set or invalid)
+    const cookieExpireDays =
+      parseInt(process.env.JWT_COOKIE_EXPIRE as string) || 1;
+    const refreshExpireDays =
+      parseInt(process.env.JWT_REFRESH_EXPIRE_DAYS as string) || 30;
+
+    // Set cookie options
+    const cookieOptions = {
+      expires: new Date(Date.now() + cookieExpireDays * 24 * 60 * 60 * 1000),
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite:
+        process.env.NODE_ENV === "production"
+          ? ("none" as const)
+          : ("lax" as const),
+      path: "/",
+    };
+
+    const refreshCookieOptions = {
+      ...cookieOptions,
+      expires: new Date(Date.now() + refreshExpireDays * 24 * 60 * 60 * 1000),
+      path: "/api/auth/refresh-token", // Restrict path for better security
+    };
+
+    // Set cookies
+    res.cookie("token", token, cookieOptions);
+    res.cookie("refreshToken", refreshToken, refreshCookieOptions);
+
+    // Redirect to the frontend dashboard
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    res.redirect(`${frontendUrl}/dashboard`);
   } catch (error) {
     next(error);
   }

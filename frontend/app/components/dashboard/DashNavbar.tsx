@@ -138,17 +138,17 @@ const DashNavbar = () => {
         scrolled ? "shadow-md" : "shadow-sm"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
-        <div className="h-14 flex justify-between items-center">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="h-16 flex justify-between items-center">
           {/* Logo */}
           <div className="flex-shrink-0 flex items-center">
             <Link
               href="/dashboard"
-              className="text-lg font-bold text-primary-600 flex items-center"
+              className="text-xl font-bold text-primary-600 flex items-center"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-1.5"
+                className="h-6 w-6 mr-2"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -170,13 +170,13 @@ const DashNavbar = () => {
               <Link
                 key={item.name}
                 href={item.href}
-                className={`px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center mx-0.5 transition-colors duration-200 ${
+                className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center mx-1 transition-colors duration-200 ${
                   pathname === item.href
                     ? "text-primary-600 bg-primary-50"
                     : "text-gray-600 hover:bg-gray-50 hover:text-primary-600"
                 }`}
               >
-                <span className="mr-1">{item.icon}</span>
+                <span className="mr-1.5">{item.icon}</span>
                 {item.name}
               </Link>
             ))}
@@ -187,9 +187,9 @@ const DashNavbar = () => {
             <div className="relative">
               <button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="flex items-center space-x-1.5 text-xs font-medium text-gray-700 hover:text-primary-600 focus:outline-none transition-colors duration-200"
+                className="flex items-center space-x-2 text-sm font-medium text-gray-700 hover:text-primary-600 focus:outline-none transition-colors duration-200"
               >
-                <div className="h-7 w-7 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-semibold text-xs">
+                <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-semibold text-sm">
                   {user?.firstName?.charAt(0) || "U"}
                 </div>
                 <span className="hidden md:block">
@@ -197,7 +197,7 @@ const DashNavbar = () => {
                 </span>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className={`h-4 w-4 transition-transform duration-200 ${
+                  className={`h-5 w-5 transition-transform duration-200 ${
                     userMenuOpen ? "rotate-180" : ""
                   }`}
                   viewBox="0 0 20 20"
@@ -218,33 +218,33 @@ const DashNavbar = () => {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg py-1 z-10"
+                    className="absolute right-0 mt-2 w-52 bg-white border border-gray-200 rounded-lg shadow-lg py-1.5 z-10"
                   >
-                    <div className="px-3 py-2 text-xs text-gray-700 border-b border-gray-100">
+                    <div className="px-4 py-3 text-sm text-gray-700 border-b border-gray-100">
                       <div className="font-medium">
                         {user?.firstName} {user?.lastName}
                       </div>
-                      <div className="text-xs text-gray-500 truncate">
+                      <div className="text-sm text-gray-500 truncate">
                         {user?.email}
                       </div>
                     </div>
                     <Link
                       href="/dashboard/profile"
-                      className="block px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                       onClick={() => setUserMenuOpen(false)}
                     >
                       Profile
                     </Link>
                     <Link
                       href="/dashboard/settings"
-                      className="block px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                       onClick={() => setUserMenuOpen(false)}
                     >
                       Settings
                     </Link>
                     <button
                       onClick={handleLogout}
-                      className="block w-full text-left px-3 py-1.5 text-xs text-red-600 hover:bg-red-50"
+                      className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                     >
                       Logout
                     </button>

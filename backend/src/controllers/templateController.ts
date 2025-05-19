@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import mongoose from "mongoose";
 import Template from "../models/templateModel";
 import { AppError } from "../middlewares/errorMiddleware";
+import { CacheService } from "../services/cacheService";
 
 // @desc    Get all templates
 // @route   GET /api/templates
@@ -93,6 +94,9 @@ export const createTemplate = async (
   try {
     const template = await Template.create(req.body);
 
+    // Invalidate templates cache after creating a new template
+    await CacheService.delByPattern("templates:*");
+
     res.status(201).json({
       success: true,
       data: template,
@@ -126,6 +130,12 @@ export const updateTemplate = async (
       throw new AppError("Template not found", 404);
     }
 
+    // Invalidate related caches
+    await Promise.all([
+      CacheService.delByPattern("templates:*"),
+      CacheService.delByPattern(`template:${templateId}*`),
+    ]);
+
     res.status(200).json({
       success: true,
       data: template,
@@ -155,6 +165,12 @@ export const deleteTemplate = async (
     if (!template) {
       throw new AppError("Template not found", 404);
     }
+
+    // Invalidate related caches
+    await Promise.all([
+      CacheService.delByPattern("templates:*"),
+      CacheService.delByPattern(`template:${templateId}*`),
+    ]);
 
     res.status(200).json({
       success: true,

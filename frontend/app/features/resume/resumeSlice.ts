@@ -299,7 +299,10 @@ export const cloneResume = createAsyncThunk(
 
 export const downloadResumePdf = createAsyncThunk(
   "resume/downloadPdf",
-  async (id: string, { rejectWithValue, getState }) => {
+  async (
+    { id, template = "modern" }: { id: string; template?: string },
+    { rejectWithValue, getState }
+  ) => {
     try {
       // Get token from state to ensure proper authorization
       const state = getState() as RootState;
@@ -309,13 +312,14 @@ export const downloadResumePdf = createAsyncThunk(
         throw new Error("Authentication required. Please log in.");
       }
 
-      const response = await resumeAPI.downloadPdf(id);
+      // Call the API with the selected template
+      const response = await resumeAPI.downloadPdf(id, template);
 
-      // Create a blob URL for the HTML content
-      const blob = new Blob([response.data], { type: "text/html" });
+      // Create a blob URL for the PDF content
+      const blob = new Blob([response.data], { type: "application/pdf" });
       const url = window.URL.createObjectURL(blob);
 
-      // Open the HTML in a new window/tab for the user to print
+      // Open the PDF in a new window/tab
       window.open(url, "_blank");
 
       // Clean up the URL after a short delay
@@ -325,7 +329,7 @@ export const downloadResumePdf = createAsyncThunk(
 
       return url; // Return the URL for potential use
     } catch (error: any) {
-      console.error("Resume HTML generation error:", error);
+      console.error("Resume PDF generation error:", error);
 
       // Handle authentication error specifically
       if (error.response?.status === 401) {
@@ -333,7 +337,7 @@ export const downloadResumePdf = createAsyncThunk(
       }
 
       return rejectWithValue(
-        error.response?.data?.message || "Failed to generate resume"
+        error.response?.data?.message || "Failed to generate PDF resume"
       );
     }
   }

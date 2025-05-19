@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>{{RESUME_TITLE}}</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap");
+
+      body {
+        font-family: "Inter", sans-serif;
+        margin: 0;
+        padding: 0;
+        color: #1a202c;
+        line-height: 1.5;
+        background-color: #fff;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 40px;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 40px;
+      }
+
+      .name {
+        font-size: 28px;
+        font-weight: 600;
+        margin-bottom: 10px;
+        letter-spacing: -0.5px;
+      }
+
+      .job-title {
+        font-size: 18px;
+        color: #4a5568;
+        margin-bottom: 15px;
+        font-weight: 400;
+      }
+
+      .contact {
+        font-size: 14px;
+        color: #4a5568;
+        margin-bottom: 15px;
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        flex-wrap: wrap;
+      }
+
+      .contact a {
+        color: #4a5568;
+        text-decoration: none;
+        transition: color 0.2s;
+      }
+
+      .contact a:hover {
+        color: #000;
+      }
+
+      .summary {
+        font-size: 14px;
+        margin: 25px 0;
+        line-height: 1.6;
+        text-align: center;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .divider {
+        height: 1px;
+        background-color: #e2e8f0;
+        margin: 30px 0;
+      }
+
+      .section {
+        margin-bottom: 25px;
+      }
+
+      h2 {
+        font-size: 16px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 15px;
+        color: #1a202c;
+        text-align: center;
+      }
+
+      .item {
+        margin-bottom: 20px;
+        page-break-inside: avoid;
+      }
+
+      .item-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        align-items: center;
+      }
+
+      .item-title {
+        font-weight: 500;
+        font-size: 16px;
+        color: #1a202c;
+      }
+
+      .item-subtitle {
+        font-size: 14px;
+        color: #4a5568;
+        margin-bottom: 5px;
+      }
+
+      .item-date {
+        font-size: 13px;
+        color: #718096;
+      }
+
+      .item-description {
+        font-size: 14px;
+        line-height: 1.6;
+        color: #4a5568;
+      }
+
+      .skills-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: center;
+      }
+
+      .skill {
+        padding: 4px 10px;
+        font-size: 13px;
+        color: #4a5568;
+        border: 1px solid #e2e8f0;
+        border-radius: 3px;
+      }
+
+      @media print {
+        body {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="name">{{FULL_NAME}}</div>
+        <div class="job-title">{{JOB_TITLE}}</div>
+        <div class="contact">
+          {{#if EMAIL}}<span>{{EMAIL}}</span>{{/if}} {{#if
+          PHONE}}<span>{{PHONE}}</span>{{/if}} {{#if CITY}}
+          <span> {{CITY}}{{#if STATE}}, {{STATE}}{{/if}} </span>
+          {{/if}} {{#if LINKEDIN}}<span>{{LINKEDIN}}</span>{{/if}} {{#if
+          WEBSITE}}<span>{{WEBSITE}}</span>{{/if}} {{#if
+          GITHUB}}<span>{{GITHUB}}</span>{{/if}}
+        </div>
+
+        {{#if SUMMARY}}
+        <div class="summary">{{SUMMARY}}</div>
+        {{/if}}
+      </div>
+
+      <div class="divider"></div>
+
+      {{EXPERIENCE_SECTION}}
+      <div class="divider"></div>
+      {{EDUCATION_SECTION}}
+      <div class="divider"></div>
+      {{SKILLS_SECTION}} {{#if PROJECTS_SECTION}}
+      <div class="divider"></div>
+      {{PROJECTS_SECTION}} {{/if}} {{#if CERTIFICATIONS_SECTION}}
+      <div class="divider"></div>
+      {{CERTIFICATIONS_SECTION}} {{/if}}
+    </div>
+  </body>
+</html>

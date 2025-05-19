@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>{{RESUME_TITLE}}</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Poppins", sans-serif;
+        margin: 0;
+        padding: 0;
+        color: #2d3748;
+        line-height: 1.5;
+        background-color: #fff;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 40px;
+      }
+
+      .header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 30px;
+        border-bottom: 3px solid #4299e1;
+        padding-bottom: 20px;
+      }
+
+      .name-section {
+        flex: 2;
+      }
+
+      .contact-section {
+        flex: 1;
+        text-align: right;
+        font-size: 13px;
+      }
+
+      .name {
+        font-size: 32px;
+        font-weight: 700;
+        margin-bottom: 5px;
+        color: #2b6cb0;
+      }
+
+      .job-title {
+        font-size: 18px;
+        color: #4a5568;
+        margin-bottom: 5px;
+        font-weight: 500;
+      }
+
+      .contact-item {
+        margin-bottom: 5px;
+      }
+
+      .summary {
+        font-size: 14px;
+        margin-bottom: 20px;
+        line-height: 1.6;
+        padding: 15px;
+        background-color: #f7fafc;
+        border-radius: 5px;
+        border-left: 3px solid #4299e1;
+      }
+
+      .section {
+        margin-bottom: 25px;
+      }
+
+      h2 {
+        color: #2b6cb0;
+        font-size: 22px;
+        font-weight: 600;
+        margin-bottom: 15px;
+        position: relative;
+        padding-bottom: 8px;
+      }
+
+      h2:after {
+        content: "";
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        height: 3px;
+        width: 50px;
+        background-color: #4299e1;
+      }
+
+      .item {
+        margin-bottom: 20px;
+        page-break-inside: avoid;
+      }
+
+      .item-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+
+      .item-title {
+        font-weight: 600;
+        font-size: 16px;
+        color: #2d3748;
+      }
+
+      .item-subtitle {
+        font-size: 14px;
+        color: #4299e1;
+        margin-bottom: 5px;
+      }
+
+      .item-date {
+        font-size: 13px;
+        color: #718096;
+        text-align: right;
+      }
+
+      .item-description {
+        font-size: 14px;
+        line-height: 1.6;
+        color: #4a5568;
+      }
+
+      .skills-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .skill {
+        background: #ebf8ff;
+        padding: 5px 12px;
+        border-radius: 15px;
+        font-size: 13px;
+        color: #2b6cb0;
+        font-weight: 500;
+      }
+
+      a {
+        color: #4299e1;
+        text-decoration: none;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+
+      .page-break {
+        page-break-after: always;
+      }
+
+      @media print {
+        body {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+
+        .summary,
+        .skill {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+          box-decoration-break: clone;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="name-section">
+          <div class="name">{{FULL_NAME}}</div>
+          <div class="job-title">{{JOB_TITLE}}</div>
+        </div>
+        <div class="contact-section">
+          {{#if EMAIL}}
+          <div class="contact-item">{{EMAIL}}</div>
+          {{/if}} {{#if PHONE}}
+          <div class="contact-item">{{PHONE}}</div>
+          {{/if}} {{#if CITY}}
+          <div class="contact-item">
+            {{CITY}}{{#if STATE}}, {{STATE}}{{/if}} {{ZIP_CODE}}
+          </div>
+          {{/if}} {{#if LINKEDIN}}
+          <div class="contact-item">{{LINKEDIN}}</div>
+          {{/if}} {{#if WEBSITE}}
+          <div class="contact-item">{{WEBSITE}}</div>
+          {{/if}} {{#if GITHUB}}
+          <div class="contact-item">{{GITHUB}}</div>
+          {{/if}}
+        </div>
+      </div>
+
+      {{#if SUMMARY}}
+      <div class="summary">{{SUMMARY}}</div>
+      {{/if}} {{EXPERIENCE_SECTION}} {{EDUCATION_SECTION}} {{SKILLS_SECTION}}
+      {{PROJECTS_SECTION}} {{CERTIFICATIONS_SECTION}}
+    </div>
+  </body>
+</html>

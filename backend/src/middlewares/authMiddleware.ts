@@ -3,6 +3,8 @@ import jwt from "jsonwebtoken";
 import User from "../models/userModel";
 import { AppError } from "./errorMiddleware";
 import type { IUser } from "../models/userModel";
+import { redisClient } from "../config/redis";
+import { logger } from "../utils/logger";
 
 interface JwtPayload {
   id: string;
@@ -94,65 +96,74 @@ export const authorize = (...roles: string[]) => {
   };
 };
 
-// In-memory store for rate limiting
-// Note: For production with multiple instances, use Redis or a similar solution
-const requestCounts = new Map<string, { count: number; resetTime: number }>();
-
-// Clean up expired entries periodically (every 5 minutes)
-const cleanupInterval = 5 * 60 * 1000; // 5 minutes
-setInterval(() => {
-  const now = Date.now();
-  for (const [ip, data] of requestCounts.entries()) {
-    if (now > data.resetTime) {
-      requestCounts.delete(ip);
-    }
+// Admin authorization middleware
+export const isAdmin = (req: Request, _res: Response, next: NextFunction) => {
+  if (!req.user) {
+    return next(new AppError("User not authenticated", 401));
   }
-}, cleanupInterval);
 
-// Rate limiting middleware
+  if (req.user.role !== "admin") {
+    return next(
+      new AppError("Admin privileges required to access this route", 403)
+    );
+  }
+
+  next();
+};
+
+// Redis-based rate limiting middleware
 export const rateLimiter = (maxRequests: number, windowMs: number) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    // Use IP and route as the key for more granular control
-    const ip = req.ip || "unknown";
-    const route = req.originalUrl || req.url;
-    const key = `${ip}:${route}`;
-    const now = Date.now();
-
-    // Get or create entry for this key
-    let entry = requestCounts.get(key);
-
-    if (!entry || now > entry.resetTime) {
-      // Create new entry or reset existing one
-      entry = { count: 0, resetTime: now + windowMs };
-      requestCounts.set(key, entry);
+  return async (req: Request, res: Response, next: NextFunction) => {
+    if (!process.env.REDIS_URL) {
+      // Fallback to simple in-memory tracking if Redis isn't available
+      return next();
     }
 
-    // Increment count
-    entry.count++;
+    try {
+      // Use IP and route as the key for more granular control
+      const ip = req.ip || "unknown";
+      const route = req.originalUrl || req.url;
+      const key = `ratelimit:${ip}:${route}`;
+      const now = Date.now();
+      const windowSeconds = Math.floor(windowMs / 1000);
 
-    // Set rate limit headers
-    res.setHeader("X-RateLimit-Limit", maxRequests.toString());
-    res.setHeader(
-      "X-RateLimit-Remaining",
-      Math.max(0, maxRequests - entry.count).toString()
-    );
-    res.setHeader(
-      "X-RateLimit-Reset",
-      Math.ceil(entry.resetTime / 1000).toString()
-    );
+      // Increment the counter and get current value
+      const count = await redisClient.incr(key);
 
-    // Check if limit exceeded
-    if (entry.count > maxRequests) {
-      return next(
-        new AppError(
-          `Too many requests, please try again after ${Math.ceil(
-            (entry.resetTime - now) / 1000
-          )} seconds`,
-          429
-        )
+      // Set expiration on first request
+      if (count === 1) {
+        await redisClient.expire(key, windowSeconds);
+      }
+
+      // Get TTL (time to live) for the key
+      const ttl = await redisClient.ttl(key);
+
+      // Set rate limit headers
+      res.setHeader("X-RateLimit-Limit", maxRequests.toString());
+      res.setHeader(
+        "X-RateLimit-Remaining",
+        Math.max(0, maxRequests - count).toString()
       );
-    }
+      res.setHeader(
+        "X-RateLimit-Reset",
+        (Math.floor(now / 1000) + ttl).toString()
+      );
 
-    next();
+      // Check if limit exceeded
+      if (count > maxRequests) {
+        return next(
+          new AppError(
+            `Too many requests, please try again after ${ttl} seconds`,
+            429
+          )
+        );
+      }
+
+      next();
+    } catch (error: any) {
+      // Log error but proceed (don't block the request if rate limiting fails)
+      logger.error(`Rate limiting error: ${error.message}`);
+      next();
+    }
   };
 };
